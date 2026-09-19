@@ -7,10 +7,9 @@ import os
 from flask import Flask, request, jsonify
 
 # ═══════════════════════════════════════════
-# AYARLAR
+# AYARLAR (Panelden okunur)
 # ═══════════════════════════════════════════
-# Token'ı panelden Environment Variable olarak ekleyeceksin
-DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN") 
+DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", "")
 API_SECRET = os.environ.get("API_SECRET", "ramhub_gizli_2024")
 
 if not DISCORD_TOKEN:
@@ -65,6 +64,7 @@ bot = commands.Bot(command_prefix=".", intents=intents, help_command=None)
 @bot.event
 async def on_ready():
     print(f"✅ Bot hazır: {bot.user}")
+    print(f"📡 Sunucular: {len(bot.guilds)}")
 
 @bot.command(name="key")
 async def key_cmd(ctx):
@@ -77,27 +77,47 @@ async def key_cmd(ctx):
         pass
 
     existing = get_key_by_user(user_id)
+
     if existing:
         key_value = existing
-        dm_msg = f"🔑 **Kayıtlı Key'in**\n```{key_value}```\nBunu Roblox script'ine gir."
+        dm_msg = (
+            f"🔑 **Kayıtlı Key'in**\n"
+            f"```{key_value}```\n"
+            f"Bunu Roblox script'ine gir."
+        )
     else:
         key_value = create_key(user_id, username)
-        dm_msg = f"🔑 **Yeni Key Oluşturuldu**\n```{key_value}```\nBunu Roblox script'ine gir.\nTekrar `.key` yazarsan aynı key'i alırsın."
+        dm_msg = (
+            f"🔑 **Yeni Key Oluşturuldu**\n"
+            f"```{key_value}```\n"
+            f"Bunu Roblox script'ine gir.\n"
+            f"Tekrar `.key` yazarsan aynı key'i alırsın."
+        )
 
     try:
-        await ctx.send(f"{ctx.author.mention} 📩 **DM kutunu kontrol et!**", delete_after=5)
+        await ctx.send(
+            f"{ctx.author.mention} 📩 **DM kutunu kontrol et!**",
+            delete_after=5
+        )
     except:
         pass
 
     try:
         await ctx.author.send(dm_msg)
     except discord.Forbidden:
-        await ctx.send(f"{ctx.author.mention} ⚠️ DM kutun kapalı! Özelden yazamıyorum.", delete_after=8)
+        await ctx.send(
+            f"{ctx.author.mention} ⚠️ DM kutun kapalı! Özelden yazamıyorum.",
+            delete_after=8
+        )
 
 # ═══════════════════════════════════════════
-# FLASK API
+# FLASK API (Roblox doğrulama)
 # ═══════════════════════════════════════════
 app = Flask(__name__)
+
+@app.route("/", methods=["GET"])
+def home():
+    return "RamHub Key API çalışıyor ✅"
 
 @app.route("/verify", methods=["POST"])
 def verify():
@@ -118,7 +138,8 @@ def verify():
     return jsonify({"valid": False, "message": "Key geçersiz"})
 
 def run_api():
-    port = int(os.environ.get("PORT", 8080))
+    # ⚠️ ÖNEMLİ: Bot-Hosting SERVER_PORT kullanıyor
+    port = int(os.environ.get("SERVER_PORT", 8080))
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 # ═══════════════════════════════════════════
